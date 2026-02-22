@@ -2085,3 +2085,15 @@ Zikrin
 zlabel
 Zmat
 Zur
+bse
+bss
+conda
+cov
+ECKERLE
+lipschitz
+lsqminnorm
+MISRA
+NELSONLS
+OSBORNEA
+plib
+svds

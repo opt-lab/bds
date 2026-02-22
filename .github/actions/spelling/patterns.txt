@@ -75,3 +75,7 @@
 # Ignore file names with various extensions
 \b\w+\.(?:tex|pdf|md|txt|gif|png|jpg|jpeg|bmp|svg|doc|docx|xls|xlsx|ppt|pptx|csv|tsv|json|yaml|yml|xml|ini|log|conf|cfg|c|h|cpp|hpp|py|java|js|css|html|php|sql)\b
 {(?:\w|\\)+\.(?:tex|pdf|md|txt|gif|png|jpg|jpeg|bmp|svg|doc|docx|xls|xlsx|ppt|pptx|csv|tsv|json|yaml|yml|xml|ini|log|conf|cfg|c|h|cpp|hpp|py|java|js|css|html|php|sql)|{(?:\w|\\)+}
+
+# Only include .m and .md files for spell checking
+*.m
+*.md
