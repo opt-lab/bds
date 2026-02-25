@@ -218,7 +218,7 @@ if isfield(options, "alpha_init")
         alpha_vec = zeros(n, 1);
         for i = 1:n
             if x0(i) ~= 0
-                alpha_vec(i) = max(abs(x0(i)), 1e-6);
+                alpha_vec(i) = max(abs(x0(i)), options.StepTolerance(i));
             else
                 alpha_vec(i) = 1;
             end
