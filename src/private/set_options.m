@@ -199,15 +199,16 @@ if isfield(options, "alpha_init")
     elseif length(options.alpha_init) == options.num_blocks
         options.alpha_init = options.alpha_init(:);
     elseif strcmpi(options.alpha_init, "auto")
-        alpha_init = zeros(n, 1);
+        % Calculate Smart Alpha
+        alpha_vec = zeros(n, 1);
         for i = 1:n
             if x0(i) ~= 0
-                alpha_init(i) = max(abs(x0(i)), options.StepTolerance(i));
+                alpha_vec(i) = max(abs(x0(i)), 1e-6);
             else
-                alpha_init(i) = 1;
+                alpha_vec(i) = 1;
             end
         end
-        options.alpha_init = alpha_init;
+        options.alpha_init = alpha_vec;
     else
         error('BDS:set_options:InvalidAlphaInitLength', ...
             'Length of options.alpha_init must match options.num_blocks if it is a vector.');
