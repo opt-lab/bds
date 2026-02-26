@@ -212,13 +212,28 @@ if isfield(options, "alpha_init")
         %         alpha_vec(i) = 1;
         %     end
         % end
-        for i= 1:n
-            val = abs(x0(i));
-            if val == 0
-                alpha_vec(i) = 1;
-            else
-                alpha_vec(i) = max(options.StepTolerance(i), min(val, max(1, 0.1*val)));
-            end
+        
+        % for i= 1:n
+        %     val = abs(x0(i));
+        %     if val == 0
+        %         alpha_vec(i) = 1;
+        %     else
+        %         alpha_vec(i) = max(options.StepTolerance(i), min(val, max(1, 0.1*val)));
+        %     end
+        % end
+
+        % 提取全局最大尺度，并设定万分之一的全局保护底线
+        global_floor=max(abs(x0))*1e-4; 
+
+        for i=1:n
+        val=abs(x0(i));
+        if val==0
+        % 零变量不仅要破除 0，还要跟上全局宏观尺度
+        alpha_vec(i)=max(1.0,global_floor);
+        else
+        % 核心融合：在原有的独立缩放基础上，叠加全局底线保护
+        alpha_vec(i)=max([1e-6,global_floor,min(val,max(1.0,0.1*val))]);
+        end
         end
         options.alpha_init = alpha_vec;
     else
