@@ -5,12 +5,12 @@ if nargin < 3
     error('Usage: get_x0(mindim, maxdim, plibs)');
 end
 
-plibs = lower(char(plibs));
+plibs = normalize_plibs(plibs);
+plibs_stamp = get_plibs_stamp(plibs);
 options.mindim = mindim;
 options.maxdim = maxdim;
 options.ptype = 'u';
-if strcmpi(plibs, 'matcutest')
-    exclude_list = {'ARGTRIGLS',...
+matcutest_exclude_list = {'ARGTRIGLS',...
     'BROWNAL',...
     'COATING',...
     'DIAMON2DLS',...
@@ -34,8 +34,7 @@ if strcmpi(plibs, 'matcutest')
     'PENALTY2',...
     'PENALTY3',...
     'VARDIM'};
-else
-    exclude_list = {'DIAMON2DLS',...
+s2mpj_exclude_list = {'DIAMON2DLS',...
     'DIAMON2D',...
     'DIAMON3DLS',...
     'DIAMON3D',...
@@ -86,31 +85,48 @@ else
     'SSBRYBND_100',...
     'TRIGON1_100',...
     'YATP1LS_120'};
-end
-switch plibs
-    case 's2mpj'
-        problem_list = s2mpj_select(options);
-        load_problem = @(name) s2mpj_load(name);
-    case 'matcutest'
-        problem_list = matcutest_select(options);
-        load_problem = @(name) matcutest_load(name);
-    otherwise
-        error('Unsupported plibs value: %s. Use ''s2mpj'' or ''matcutest''.', plibs);
+
+if isequal(plibs, {'matcutest'})
+    exclude_list = matcutest_exclude_list;
+elseif isequal(plibs, {'s2mpj'})
+    exclude_list = s2mpj_exclude_list;
+else
+    exclude_list = union(matcutest_exclude_list, s2mpj_exclude_list, 'stable');
 end
 
-if isstring(problem_list)
-    problem_list = cellstr(problem_list);
-elseif ischar(problem_list)
-    problem_list = {problem_list};
-end
+problem_list = {};
+problem_libs = {};
+for i_lib = 1:numel(plibs)
+    switch plibs{i_lib}
+        case 's2mpj'
+            current_problem_list = s2mpj_select(options);
+            current_libs = repmat({'s2mpj'}, numel(current_problem_list), 1);
+        case 'matcutest'
+            current_problem_list = matcutest_select(options);
+            current_libs = repmat({'matcutest'}, numel(current_problem_list), 1);
+        otherwise
+            error('Unsupported plibs value. Use ''s2mpj'', ''matcutest'', or {''matcutest'', ''s2mpj''}.');
+    end
 
-if ~isempty(exclude_list)
-    problem_list = problem_list(~ismember(problem_list, exclude_list));
+    if isstring(current_problem_list)
+        current_problem_list = cellstr(current_problem_list);
+    elseif ischar(current_problem_list)
+        current_problem_list = {current_problem_list};
+    end
+
+    if ~isempty(exclude_list)
+        is_kept = ~ismember(current_problem_list, exclude_list);
+        current_problem_list = current_problem_list(is_kept);
+        current_libs = current_libs(is_kept);
+    end
+
+    problem_list = [problem_list; current_problem_list(:)];
+    problem_libs = [problem_libs; current_libs(:)];
 end
 
 num_problems = length(problem_list);
 output_path = fullfile(fileparts(mfilename('fullpath')), ...
-    sprintf('x0_summary_%d_%d_%s.txt', mindim, maxdim, plibs));
+    sprintf('x0_summary_%d_%d_%s.txt', mindim, maxdim, plibs_stamp));
 
 problems = cell(num_problems, 1);
 x0_values = cell(num_problems, 1);
@@ -118,7 +134,12 @@ ratio_values = cell(num_problems, 1);
 for i = 1:num_problems
     problem = problem_list{i};
     fprintf('Testing problem: %s\n', problem);
-    p = load_problem(problem);
+    switch problem_libs{i}
+        case 's2mpj'
+            p = s2mpj_load(problem);
+        case 'matcutest'
+            p = matcutest_load(problem);
+    end
     x0 = p.x0;
     abs_x0 = abs(x0(:));
     max_abs = max(abs_x0);
@@ -156,4 +177,35 @@ end
 fclose(fid);
 fprintf('Wrote x0 summary to %s\n', output_path);
 
+end
+
+function plibs = normalize_plibs(plibs)
+    if ischar(plibs)
+        plibs = {plibs};
+    elseif isstring(plibs)
+        plibs = cellstr(plibs(:)');
+    end
+
+    plibs = lower(plibs);
+    ordered_plibs = {};
+    if any(strcmp(plibs, 'matcutest'))
+        ordered_plibs{end + 1} = 'matcutest';
+    end
+    if any(strcmp(plibs, 's2mpj'))
+        ordered_plibs{end + 1} = 's2mpj';
+    end
+
+    if isempty(ordered_plibs)
+        plibs = unique(plibs, 'stable');
+    else
+        plibs = ordered_plibs;
+    end
+end
+
+function plibs_stamp = get_plibs_stamp(plibs)
+    if isequal(plibs, {'matcutest', 's2mpj'})
+        plibs_stamp = 'matcutest_s2mpj';
+    else
+        plibs_stamp = strjoin(plibs, '_');
+    end
 end
