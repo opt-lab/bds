@@ -8,7 +8,7 @@ function [x_best, f_min] = tune_bds_params(x0, rhobeg, rhoend, maxfun, mindim, m
 %   maxfun   Maximum number of function evaluations.
 %   mindim   Minimum dimension of the problem.
 %   maxdim   Maximum dimension of the problem.
-%   plibs    Libraries for performance profile ('s2mpj' or 'matcutest').
+%   plibs    Libraries for performance profile ('s2mpj', 'matcutest', or {'matcutest', 's2mpj'}).
 
 options = struct();
 options.rhobeg = rhobeg;
@@ -33,8 +33,9 @@ f_min = fopt;
 % 2. Data Logging Phase
 % =========================================================================
 time_str = char(datetime('now', 'Format', 'yy_MM_dd_HH_mm'));
+plibs_stamp = get_plibs_stamp(plibs);
 subfolder_name = sprintf('cbds_tuning_expand_shrink_%d_%d_%d_%s_%s', ...
-    mindim, maxdim, options.maxfun, plibs, time_str);
+    mindim, maxdim, options.maxfun, plibs_stamp, time_str);
 
 current_path = mfilename("fullpath");
 path_current_dir = fileparts(current_path);
@@ -146,4 +147,26 @@ tuning_optiprofiler(parameters_perfprof, options_perfprof);
 options_perfprof.feature_name = 'linearly_transformed';
 tuning_optiprofiler(parameters_perfprof, options_perfprof);
 
+end
+
+function plibs_stamp = get_plibs_stamp(plibs)
+    if ischar(plibs)
+        plibs = {plibs};
+    elseif isstring(plibs)
+        plibs = cellstr(plibs(:)');
+    end
+
+    plibs = lower(plibs);
+    has_matcutest = any(strcmp(plibs, 'matcutest'));
+    has_s2mpj = any(strcmp(plibs, 's2mpj'));
+
+    if has_matcutest && has_s2mpj
+        plibs_stamp = 'matcutest_s2mpj';
+    elseif has_matcutest
+        plibs_stamp = 'matcutest';
+    elseif has_s2mpj
+        plibs_stamp = 's2mpj';
+    else
+        plibs_stamp = strjoin(unique(plibs, 'stable'), '_');
+    end
 end
